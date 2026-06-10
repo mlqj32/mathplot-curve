@@ -39,7 +39,7 @@ English: In-browser math curve & surface plotter — explicit, parametric, impli
 
 | 深色主题 · 2D | 深色主题 · 3D 抛物面 |
 | :---: | :---: |
-| ![深色 2D 曲线](image/7-dark-2d.png) | ![深色 3D 抛物面](image/8.png) |
+| ![深色 2D 曲线](image/7.png) | ![深色 3D 抛物面](image/8.png) |
 
 ---
 
