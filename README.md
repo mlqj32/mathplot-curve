@@ -37,9 +37,9 @@ English: In-browser math curve & surface plotter — explicit, parametric, impli
 | :---: | :---: |
 | ![3D 圆锥面](image/5.png) | ![3D 正弦波纹](image/6.png) |
 
-| 深色主题 · 2D | 深色主题 · 3D 抛物面 |
+| 深色主题 · 3D 椭球面 | 深色主题 · 3D 抛物面 |
 | :---: | :---: |
-| ![深色 2D 曲线](image/7.png) | ![深色 3D 抛物面](image/8.png) |
+| ![深色 3D 椭球面](image/7.png) | ![深色 3D 抛物面](image/8.png) |
 
 ---
 
