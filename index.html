@@ -1181,7 +1181,7 @@
           <div id="explicitInputs">
             <div class="form-group">
               <label>y =</label>
-              <input type="text" id="expr2d" value="sin(x)" placeholder="例如: sin(x), 2*x, ln(x)">
+              <input type="text" id="expr2d" value="sin(x)" placeholder="例如: sin(x), ln(x), loge(x)">
             </div>
           </div>
 
@@ -3444,19 +3444,20 @@
       return insertImplicitMultiply(expandFunctionShorthand(result.replace(/§FUNCEXP§/g, 'exp')));
     }
 
-    /** log/lg→log10(常用对数)；ln→log(自然对数)；sinx、xsinx、4lnx、ln√x 等简写 */
+    /** log/lg→log10(常用对数)；ln/loge→log(自然对数)；sinx、xsinx、4lnx、ln√x 等简写 */
     function expandFunctionShorthand(s) {
-      const FN_LIST = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'sqrt', 'exp', 'abs', 'log10', 'log2', 'log', 'ln', 'lg'];
+      const FN_LIST = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'sqrt', 'exp', 'abs', 'log10', 'log2', 'loge', 'log', 'ln', 'lg'];
       const FN = FN_LIST.join('|');
       const isFnName = (name) => FN_LIST.includes(String(name).toLowerCase());
       const normFn = (fn) => {
         const f = fn.toLowerCase();
-        if (f === 'ln') return '§NATLOG§';
+        if (f === 'ln' || f === 'loge') return '§NATLOG§';
         if (f === 'lg') return 'log10';
         return f;
       };
       const INNER_FN = 'sqrt|cbrt|sin|cos|tan|abs|exp|asin|acos|atan';
-      // ln√x → lnsqrt(x) 须先于 ln+标识符，避免变成 log(sqrt)*(x)
+      // loge/ln√x 等须先于 log→log10，避免 loge(x) 被拆成 log10(e(x))
+      s = s.replace(new RegExp(`\\bloge\\s*(${INNER_FN})\\s*\\(`, 'gi'), '§NATLOG§($1(');
       s = s.replace(new RegExp(`\\bln\\s*(${INNER_FN})\\s*\\(`, 'gi'), '§NATLOG§($1(');
       s = s.replace(new RegExp(`\\blg\\s*(${INNER_FN})\\s*\\(`, 'gi'), 'log10($1(');
       // 数字+函数+变量：4lnx → 4*log(x)
@@ -3472,15 +3473,21 @@
       s = s.replace(/\blg\s*\(/gi, 'log10(');
       s = s.replace(/\blg\s+([a-zA-Z_]\w*)/gi, 'log10($1)');
       s = s.replace(/\blg([a-zA-Z_]\w*)/gi, 'log10($1)');
+      s = s.replace(/\bloge\s*\(/gi, '§NATLOG§(');
+      s = s.replace(/\bloge\s+([a-zA-Z_]\w*)/gi, '§NATLOG§($1)');
+      s = s.replace(/\bloge([a-zA-Z_]\w*)/gi, (match, arg) => {
+        if (isFnName(arg.toLowerCase())) return match;
+        return `§NATLOG§(${arg.toLowerCase()})`;
+      });
       s = s.replace(/\bln\s*\(/gi, '§NATLOG§(');
       s = s.replace(/\bln\s+([a-zA-Z_]\w*)/gi, '§NATLOG§($1)');
       s = s.replace(/\bln([a-zA-Z_]\w*)/gi, (match, arg) => {
         if (isFnName(arg.toLowerCase())) return match;
         return `§NATLOG§(${arg.toLowerCase()})`;
       });
-      s = s.replace(/\blog(?!\d)\s*\(/gi, 'log10(');
-      s = s.replace(/\blog(?!\d)\s+([a-zA-Z_]\w*)/gi, 'log10($1)');
-      s = s.replace(/\blog(?!\d)([a-zA-Z_]\w*)/gi, 'log10($1)');
+      s = s.replace(/\blog(?!\d)(?![eE]\w)\s*\(/gi, 'log10(');
+      s = s.replace(/\blog(?!\d)(?![eE]\w)\s+([a-zA-Z_]\w*)/gi, 'log10($1)');
+      s = s.replace(/\blog(?!\d)(?![eE]\w)([a-zA-Z_]\w*)/gi, 'log10($1)');
       s = s.replace(/§NATLOG§/g, 'log');
       const FN_BARE = 'sinh|cosh|tanh|asin|acos|atan|sin|cos|tan|sqrt|exp|abs|log10|log2';
       const withSpace = new RegExp(`\\b(${FN_BARE})\\s+([a-zA-Z_][\\w]*)`, 'gi');
