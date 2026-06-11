@@ -3407,8 +3407,9 @@
       simpleReplacements.forEach(([pat, rep]) => { s = s.replace(pat, rep); });
 
       s = s.replace(/\bexp\b/gi, '§FUNCEXP§');
+      s = s.replace(/\bloge\b/gi, '§LOGNAT§');
 
-      // xe^x、2e^x 等连写（须在 e→E 之前）
+      // xe^x、2e^x 等连写（须在 e→E 之前；loge 已占位，避免 loge(x)→log*E(x)）
       s = s.replace(/(\d+(?:\.\d+)?|[a-zA-Z_]\w*)e(\^|\()/gi, (_, pre, op) => `${pre}*E${op}`);
 
       // 自然常数 e（欧拉数），避免与 exp 等混淆（仅小写 e，勿用 i 以免误伤 §FUNCEXP§）
@@ -3446,6 +3447,7 @@
 
     /** log/lg→log10(常用对数)；ln/loge→log(自然对数)；sinx、xsinx、4lnx、ln√x 等简写 */
     function expandFunctionShorthand(s) {
+      s = s.replace(/§LOGNAT§/gi, 'loge');
       const FN_LIST = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'sqrt', 'exp', 'abs', 'log10', 'log2', 'loge', 'log', 'ln', 'lg'];
       const FN = FN_LIST.join('|');
       const isFnName = (name) => FN_LIST.includes(String(name).toLowerCase());
