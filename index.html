@@ -5232,14 +5232,31 @@
       return a.xMin === b.xMin && a.xMax === b.xMax && a.yMin === b.yMin && a.yMax === b.yMax;
     }
 
-    function draw2d(recomputeRange) {
+    function is2dPlotInputEmpty(type) {
+      if (type === 'explicit') return !document.getElementById('expr2d').value.trim();
+      if (type === 'parametric') {
+        return !document.getElementById('xExpr2d').value.trim() || !document.getElementById('yExpr2d').value.trim();
+      }
+      if (type === 'implicit') return !document.getElementById('implicitExpr').value.trim();
+      if (type === 'imageContour') return !imageContourCurve || imageContourCurve.points.length < 3;
+      return false;
+    }
+
+    function draw2d(recomputeRange, opts = {}) {
+      const silentIfEmpty = opts.silentIfEmpty !== false;
       hideError();
+      const type = document.getElementById('inputType2d').value;
+      const inputEmpty = is2dPlotInputEmpty(type);
       const constraints = get2dRangeConstraints();
       let range;
       if (recomputeRange) {
         try {
           const prevBase = plotRange2d ? { ...plotRange2d } : null;
-          range = resolve2dPlotRange();
+          if (inputEmpty && silentIfEmpty) {
+            range = get2dRange();
+          } else {
+            range = resolve2dPlotRange();
+          }
           const nextBase = plotRange2d ? { ...plotRange2d } : null;
           if (!rangesEqual(prevBase, nextBase)) {
             view2d = { offsetX: 0, offsetY: 0, scale: 1 };
@@ -5254,7 +5271,13 @@
       explicitPlotHint = '';
       drawGrid2d(range);
 
-      const type = document.getElementById('inputType2d').value;
+      if (inputEmpty && silentIfEmpty) {
+        updateRangeHint(range, constraints);
+        clampView2d(range);
+        update2dHintText();
+        saveSession();
+        return;
+      }
       try {
         withPlotClip(range, () => {
           if (type === 'explicit') {
@@ -5807,7 +5830,7 @@
     document.getElementById('inputType3d').addEventListener('change', update3dInputPanels);
 
     document.getElementById('drawBtn').addEventListener('click', () => {
-      if (currentMode === '2d') draw2d(true);
+      if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
       else draw3d();
     });
 
@@ -5850,7 +5873,7 @@
     // Enter 键绘制
     document.querySelector('.sidebar-content').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        if (currentMode === '2d') draw2d(true);
+        if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
         else draw3d();
       }
     });
