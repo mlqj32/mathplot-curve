@@ -5242,8 +5242,7 @@
       return false;
     }
 
-    function draw2d(recomputeRange, opts = {}) {
-      const silentIfEmpty = opts.silentIfEmpty !== false;
+    function draw2d(recomputeRange) {
       hideError();
       const type = document.getElementById('inputType2d').value;
       const inputEmpty = is2dPlotInputEmpty(type);
@@ -5252,7 +5251,7 @@
       if (recomputeRange) {
         try {
           const prevBase = plotRange2d ? { ...plotRange2d } : null;
-          if (inputEmpty && silentIfEmpty) {
+          if (inputEmpty) {
             range = get2dRange();
           } else {
             range = resolve2dPlotRange();
@@ -5271,7 +5270,7 @@
       explicitPlotHint = '';
       drawGrid2d(range);
 
-      if (inputEmpty && silentIfEmpty) {
+      if (inputEmpty) {
         updateRangeHint(range, constraints);
         clampView2d(range);
         update2dHintText();
@@ -5550,6 +5549,21 @@
       plotGroup3d.add(new THREE.Line(lineGeo, lineMat));
     }
 
+    function is3dPlotInputEmpty(type) {
+      if (type === 'surface') return !document.getElementById('expr3d').value.trim();
+      if (type === 'curve3d') {
+        return !document.getElementById('xExpr3d').value.trim()
+          || !document.getElementById('yExpr3d').value.trim()
+          || !document.getElementById('zExpr3d').value.trim();
+      }
+      if (type === 'surfaceParam') {
+        return !document.getElementById('xUV').value.trim()
+          || !document.getElementById('yUV').value.trim()
+          || !document.getElementById('zUV').value.trim();
+      }
+      return false;
+    }
+
     function draw3d(resetCamera = true) {
       hideError();
       if (!renderer3d) init3d();
@@ -5562,6 +5576,13 @@
       lastSurfaceZStats = null;
 
       const type = document.getElementById('inputType3d').value;
+      if (is3dPlotInputEmpty(type)) {
+        const yExtent = computePlot3dYExtent(fallbackHalf, null);
+        rebuild3dFrame(range, yExtent);
+        fitCamera3d(range, yExtent, { keepAngle: !resetCamera, fullReset: resetCamera });
+        saveSession();
+        return;
+      }
       try {
         if (type === 'surface') {
           const expr = document.getElementById('expr3d').value.trim();
@@ -5830,7 +5851,7 @@
     document.getElementById('inputType3d').addEventListener('change', update3dInputPanels);
 
     document.getElementById('drawBtn').addEventListener('click', () => {
-      if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
+      if (currentMode === '2d') draw2d(true);
       else draw3d();
     });
 
@@ -5873,7 +5894,7 @@
     // Enter 键绘制
     document.querySelector('.sidebar-content').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
+        if (currentMode === '2d') draw2d(true);
         else draw3d();
       }
     });
