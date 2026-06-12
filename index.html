@@ -3445,9 +3445,40 @@
       return insertImplicitMultiply(expandFunctionShorthand(result.replace(/§FUNCEXP§/g, 'exp')));
     }
 
+    /** log3(x)、log5(x) 等 → log(x, 底数)；log10、log2 保持 math.js 原生 */
+    function expandLogWithBase(s) {
+      let out = '';
+      let i = 0;
+      while (i < s.length) {
+        const sub = s.slice(i);
+        const m = sub.match(/^log(10|2|\d+)\s*\(/i);
+        if (m && (i === 0 || !/[a-zA-Z_]/i.test(s[i - 1]))) {
+          const base = m[1];
+          const innerStart = i + m[0].length;
+          const inner = readRadicand(s, innerStart);
+          if (base === '10') out += `log10(${inner.text})`;
+          else if (base === '2') out += `log2(${inner.text})`;
+          else out += `log(${inner.text}, ${base})`;
+          i = inner.next;
+          if (s[i] === ')') i++;
+        } else {
+          out += s[i++];
+        }
+      }
+      return out;
+    }
+
     /** log/lg→log10(常用对数)；ln/loge→log(自然对数)；sinx、xsinx、4lnx、ln√x 等简写 */
     function expandFunctionShorthand(s) {
       s = s.replace(/§LOGNAT§/gi, 'loge');
+      s = expandLogWithBase(s);
+      // log3x → log(x, 3)（无括号简写）
+      s = s.replace(/\blog(10|2|\d+)([a-zA-Z_]\w*)/gi, (_, base, arg) => {
+        const a = arg.toLowerCase();
+        if (base === '10') return `log10(${a})`;
+        if (base === '2') return `log2(${a})`;
+        return `log(${a}, ${base})`;
+      });
       const FN_LIST = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'sqrt', 'exp', 'abs', 'log10', 'log2', 'loge', 'log', 'ln', 'lg'];
       const FN = FN_LIST.join('|');
       const isFnName = (name) => FN_LIST.includes(String(name).toLowerCase());
@@ -3487,9 +3518,12 @@
         if (isFnName(arg.toLowerCase())) return match;
         return `§NATLOG§(${arg.toLowerCase()})`;
       });
+      // 保护 log(x, 底数)，避免被误转为 log10（占位符勿含 log 字样）
+      s = s.replace(/\blog\(([^()]+),\s*([\d.]+)\s*\)/gi, '§ARBLOG:$2§($1)');
       s = s.replace(/\blog(?!\d)(?![eE]\w)\s*\(/gi, 'log10(');
       s = s.replace(/\blog(?!\d)(?![eE]\w)\s+([a-zA-Z_]\w*)/gi, 'log10($1)');
       s = s.replace(/\blog(?!\d)(?![eE]\w)([a-zA-Z_]\w*)/gi, 'log10($1)');
+      s = s.replace(/§ARBLOG:([\d.]+)§\(([^)]+)\)/gi, 'log($2, $1)');
       s = s.replace(/§NATLOG§/g, 'log');
       const FN_BARE = 'sinh|cosh|tanh|asin|acos|atan|sin|cos|tan|sqrt|exp|abs|log10|log2';
       const withSpace = new RegExp(`\\b(${FN_BARE})\\s+([a-zA-Z_][\\w]*)`, 'gi');
