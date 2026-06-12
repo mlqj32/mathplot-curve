@@ -5242,7 +5242,16 @@
       return false;
     }
 
-    function draw2d(recomputeRange) {
+    function get2dEmptyInputError(type) {
+      if (type === 'explicit') return '请输入函数表达式';
+      if (type === 'parametric') return '请输入参数方程';
+      if (type === 'implicit') return '请输入隐式方程';
+      if (type === 'imageContour') return '请先上传图像并成功提取轮廓';
+      return '请输入表达式';
+    }
+
+    function draw2d(recomputeRange, opts = {}) {
+      const silentIfEmpty = opts.silentIfEmpty !== false;
       hideError();
       const type = document.getElementById('inputType2d').value;
       const inputEmpty = is2dPlotInputEmpty(type);
@@ -5271,6 +5280,7 @@
       drawGrid2d(range);
 
       if (inputEmpty) {
+        if (!silentIfEmpty) showError('表达式错误: ' + get2dEmptyInputError(type));
         updateRangeHint(range, constraints);
         clampView2d(range);
         update2dHintText();
@@ -5564,7 +5574,15 @@
       return false;
     }
 
-    function draw3d(resetCamera = true) {
+    function get3dEmptyInputError(type) {
+      if (type === 'surface') return '请输入曲面表达式';
+      if (type === 'curve3d') return '请输入空间曲线表达式';
+      if (type === 'surfaceParam') return '请输入参数曲面表达式';
+      return '请输入表达式';
+    }
+
+    function draw3d(resetCamera = true, opts = {}) {
+      const silentIfEmpty = opts.silentIfEmpty !== false;
       hideError();
       if (!renderer3d) init3d();
       resizeCanvas3d();
@@ -5577,6 +5595,7 @@
 
       const type = document.getElementById('inputType3d').value;
       if (is3dPlotInputEmpty(type)) {
+        if (!silentIfEmpty) showError('表达式错误: ' + get3dEmptyInputError(type));
         const yExtent = computePlot3dYExtent(fallbackHalf, null);
         rebuild3dFrame(range, yExtent);
         fitCamera3d(range, yExtent, { keepAngle: !resetCamera, fullReset: resetCamera });
@@ -5851,8 +5870,8 @@
     document.getElementById('inputType3d').addEventListener('change', update3dInputPanels);
 
     document.getElementById('drawBtn').addEventListener('click', () => {
-      if (currentMode === '2d') draw2d(true);
-      else draw3d();
+      if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
+      else draw3d(true, { silentIfEmpty: false });
     });
 
     document.getElementById('resetViewBtn').addEventListener('click', () => {
@@ -5894,8 +5913,8 @@
     // Enter 键绘制
     document.querySelector('.sidebar-content').addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        if (currentMode === '2d') draw2d(true);
-        else draw3d();
+        if (currentMode === '2d') draw2d(true, { silentIfEmpty: false });
+        else draw3d(true, { silentIfEmpty: false });
       }
     });
 
